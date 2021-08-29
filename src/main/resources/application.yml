@@ -1,0 +1,15 @@
+server:
+    port: 8080
+
+warehouse:
+    dbName: data
+
+spring:
+    data.mongodb:
+        host: localhost
+        port: 27017
+        database: dwh
+        authentication-database: admin
+        username: root
+        password: root12345
+
