@@ -9,8 +9,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface ValidFileExtension {
 
-    String message() default
-            "File must be a csv";
+    String message() default "File must be a csv";
 
     Class<?>[] groups() default {};
 

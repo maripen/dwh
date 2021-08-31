@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import reactor.core.publisher.Mono;
 
 import javax.validation.Valid;
 
@@ -26,9 +25,8 @@ public class ImportController {
     }
 
     @PostMapping(value="csv", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public Mono<ResponseEntity<Object>> importCsv(@Valid @RequestBody ImportRequest request) {
-        return this.importService
-                    .importFile(request.getUrl())
-                    .map(unused -> ResponseEntity.ok().build());
+    public ResponseEntity<Object> importCsv(@Valid @RequestBody ImportRequest request) {
+        this.importService.importFile(request.getUrl());
+        return ResponseEntity.ok().build();
     }
 }
