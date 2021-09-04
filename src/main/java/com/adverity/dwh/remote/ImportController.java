@@ -2,6 +2,7 @@ package com.adverity.dwh.remote;
 
 import com.adverity.dwh.remote.model.ImportRequest;
 import com.adverity.dwh.service.ImportService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +16,7 @@ import javax.validation.Valid;
 
 @RestController
 @RequestMapping(value = "/import")
+@Slf4j
 public class ImportController {
 
     private ImportService importService;

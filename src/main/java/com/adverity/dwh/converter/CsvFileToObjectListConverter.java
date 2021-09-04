@@ -1,7 +1,11 @@
-package com.adverity.dwh.Converter;
+package com.adverity.dwh.converter;
 
 
+import org.springframework.beans.factory.config.ConfigurableBeanFactory;
+import org.springframework.context.annotation.Scope;
 import org.springframework.core.convert.converter.Converter;
+import org.springframework.lang.NonNull;
+import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -12,12 +16,15 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+@Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
+@Component
 public class CsvFileToObjectListConverter implements Converter<String, List<Map<String, Object>>> {
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yy");
-    private final Map<Integer, Function<String, Optional<Object>>> parseLambas = new HashMap<>();
+    private final Map<Integer, Function<String, Optional<Object>>> parseLambdasForColumns = new HashMap<>();
 
     @Override
+    @NonNull
     public List<Map<String, Object>> convert(String source) {
         var header = source.lines()
                 .map(csvRow -> csvRow.split(","))
@@ -25,9 +32,9 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
                 .orElseThrow(); // TODO: create exception
 
         return source.lines()
-                .map(csvRow -> csvRow.split(","))
                 .skip(1)
-                .map(csvRow -> parseRow(csvRow, header))
+                .map(csvRow -> csvRow.split(","))
+                .map(csvRowFields -> parseRow(csvRowFields, header))
                 .collect(Collectors.toList());
     }
 
@@ -39,8 +46,8 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
         return result;
     }
 
-    private Object getFieldType(String value, int index) {
-        return parseLambas
+    public Object getFieldType(String value, int index) { // TODO: move to util
+        return parseLambdasForColumns
                 .computeIfAbsent(index, s -> {
                     final Optional<Long> number = getNumber(value);
                     if (number.isPresent()) {
@@ -55,10 +62,10 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
                     }
                 })
                 .apply(value)
-                .orElse(value);
+                .orElse(value); // ?
     }
 
-    private static Optional<LocalDate> getDate(String value) {
+    private Optional<LocalDate> getDate(String value) {
         try {
             return Optional.of(LocalDate.from(DATE_FORMAT.parse(value)));
         } catch (Exception e) {
@@ -66,7 +73,7 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
         }
     }
 
-    private static Optional<Long> getNumber(String value) {
+    private Optional<Long> getNumber(String value) {
         try {
             return Optional.of(Long.parseLong(value));
         } catch (Exception e) {

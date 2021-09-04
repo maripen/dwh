@@ -1,16 +1,18 @@
 package com.adverity.dwh.repository;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.stereotype.Component;
+import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Map;
 
-@Component
+@Repository
 public class AdItemsRepository {
 
     private MongoTemplate mongoTemplate;
 
+    @Autowired
     public AdItemsRepository(MongoTemplate mongoTemplate) {
         this.mongoTemplate = mongoTemplate;
     }
