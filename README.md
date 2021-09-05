@@ -1,7 +1,8 @@
 # Simple Data Warehouse (extract, transform, load, query)
 Simple backend application that exposes data - extracted from a csv file - via an API.
-The system will automatically create the schema based on the input csv data types, 
-each uploaded csv is available in a separate collection by its filename. 
+The system will automatically create the schema based on the input csv data types. 
+The system also capable to handle multiple csv based collections, each uploaded csv is 
+available in a separate collection by its filename. 
 
 ## Technologies
 - [Spring Boot](https://docs.spring.io/spring-boot/docs/current/reference/htmlsingle/)
