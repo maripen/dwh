@@ -2,15 +2,16 @@ package com.adverity.dwh.remote;
 
 import com.adverity.dwh.remote.model.ReportRequest;
 import com.adverity.dwh.service.ReportService;
-import com.mongodb.MongoCommandException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
+import org.springframework.web.bind.annotation.RestController;
 
 import javax.validation.Valid;
 import java.util.List;
@@ -36,16 +37,4 @@ public class ReportController {
             @Valid @RequestBody ReportRequest request) {
         return reportService.query(request);
     }
-
-    // ControllerAdvice
-    @ExceptionHandler
-    public ResponseEntity<Map<String, String>> handle(IllegalArgumentException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
-    }
-
-    @ExceptionHandler
-    public ResponseEntity<Map<String, String>> handle(MongoCommandException ex) {
-        return ResponseEntity.badRequest().body(Map.of("error", ex.getMessage()));
-    }
-
 }

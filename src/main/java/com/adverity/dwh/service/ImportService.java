@@ -31,7 +31,7 @@ public class ImportService {
 
     public void importFile(URI fileUri) {
         log.debug("Starting import of file {}", fileUri);
-        final String filename = fileUri.getPath();
+        final String filename = fileUri.getPath().replace("/", "").replace(".csv", "");
         var csvFile = restTemplate.getForObject(fileUri, String.class);
         Objects.requireNonNull(csvFile, "Invalid URL or file not available");
         this.adItemsRepository.deleteCollection(filename);

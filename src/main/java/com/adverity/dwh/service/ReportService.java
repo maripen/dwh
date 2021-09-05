@@ -2,12 +2,8 @@ package com.adverity.dwh.service;
 
 import com.adverity.dwh.remote.model.FilterOperator;
 import com.adverity.dwh.remote.model.ReportRequest;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.model.Aggregates;
+import com.adverity.dwh.util.TypeGuesser;
 import lombok.extern.slf4j.Slf4j;
-import org.bson.Document;
-import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.aggregation.*;
@@ -16,26 +12,24 @@ import org.springframework.stereotype.Service;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-import java.util.*;
-import java.util.function.Function;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
-
-import static com.mongodb.client.model.Projections.*;
-import static com.mongodb.client.model.Projections.fields;
 
 @Service
 @Slf4j
 public class ReportService {
 
     private final MongoTemplate mongoTemplate;
-
-    private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yy");
+    private final TypeGuesser typeGuesser;
 
     @Autowired
-    public ReportService(MongoTemplate mongoTemplate) {
+    public ReportService(MongoTemplate mongoTemplate,
+                         TypeGuesser typeGuesser) {
         this.mongoTemplate = mongoTemplate;
+        this.typeGuesser = typeGuesser;
     }
 
     public List<Map> query(ReportRequest request) {
@@ -62,7 +56,7 @@ public class ReportService {
                                     try {
                                         Method filterMethod = Criteria.class.getMethod(filterOperator.name(), Object.class);
                                         criteriaList.add((Criteria) filterMethod.invoke(Criteria.where(fieldEntry.getKey()),
-                                                this.getFieldType(value).apply(value).get()));
+                                                this.typeGuesser.getFieldType(value).apply(value).get()));
                                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                                         throw new IllegalArgumentException("Illegal filter operator");
                                     }
@@ -74,36 +68,6 @@ public class ReportService {
 
             return Optional.of(Aggregation.match(new Criteria().andOperator(filterCritria)));
         } else {
-            return Optional.empty();
-        }
-    }
-
-    public Function<String, Optional> getFieldType(String value) { // TODO: move to util
-        final Optional<Long> number = getNumber(value);
-        if (number.isPresent()) {
-            return val -> getNumber(val).map(aLong -> aLong);
-        } else {
-            final Optional<LocalDate> date = getDate(value);
-            if (date.isPresent()) {
-                return val -> getDate(val).map(localDate -> localDate);
-            } else {
-                return Optional::of;
-            }
-        }
-    }
-
-    private Optional<LocalDate> getDate(String value) {
-        try {
-            return Optional.of(LocalDate.from(DATE_FORMAT.parse(value)));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-
-    private Optional<Long> getNumber(String value) {
-        try {
-            return Optional.of(Long.parseLong(value));
-        } catch (Exception e) {
             return Optional.empty();
         }
     }

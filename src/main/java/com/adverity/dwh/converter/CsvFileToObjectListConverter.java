@@ -1,13 +1,14 @@
 package com.adverity.dwh.converter;
 
 
+import com.adverity.dwh.util.TypeGuesser;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.ConfigurableBeanFactory;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.lang.NonNull;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
@@ -22,6 +23,12 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yy");
     private final Map<Integer, Function<String, Optional<Object>>> parseLambdasForColumns = new HashMap<>();
+    private final TypeGuesser typeGuesser;
+
+    @Autowired
+    public CsvFileToObjectListConverter(TypeGuesser typeGuesser) {
+        this.typeGuesser = typeGuesser;
+    }
 
     @Override
     @NonNull
@@ -29,7 +36,7 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
         var header = source.lines()
                 .map(csvRow -> csvRow.split(","))
                 .findFirst()
-                .orElseThrow(); // TODO: create exception
+                .orElseThrow(() -> new IllegalArgumentException("Missing CSV header"));
 
         return source.lines()
                 .skip(1)
@@ -41,43 +48,15 @@ public class CsvFileToObjectListConverter implements Converter<String, List<Map<
     private Map<String, Object> parseRow(String[] csvRow, String[] header) {
         var result = new HashMap<String, Object>();
         for(int i = 0; i < csvRow.length; i++) {
-            result.put(header[i], this.getFieldType(csvRow[i], i));
+            result.put(header[i], this.getOrCacheFieldType(csvRow[i], i));
         }
         return result;
     }
 
-    public Object getFieldType(String value, int index) { // TODO: move to util
+    public Object getOrCacheFieldType(String value, int index) {
         return parseLambdasForColumns
-                .computeIfAbsent(index, s -> {
-                    final Optional<Long> number = getNumber(value);
-                    if (number.isPresent()) {
-                        return val -> getNumber(val).map(aLong -> aLong);
-                    } else {
-                        final Optional<LocalDate> date = getDate(value);
-                        if (date.isPresent()) {
-                            return val -> getDate(val).map(localDate -> localDate);
-                        } else {
-                            return Optional::of;
-                        }
-                    }
-                })
+                .computeIfAbsent(index, s -> this.typeGuesser.getFieldType(value))
                 .apply(value)
-                .orElse(value); // ?
-    }
-
-    private Optional<LocalDate> getDate(String value) {
-        try {
-            return Optional.of(LocalDate.from(DATE_FORMAT.parse(value)));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
-    }
-
-    private Optional<Long> getNumber(String value) {
-        try {
-            return Optional.of(Long.parseLong(value));
-        } catch (Exception e) {
-            return Optional.empty();
-        }
+                .orElseThrow(() -> new IllegalArgumentException("Not consistent datatype in column: " + index));
     }
 }
