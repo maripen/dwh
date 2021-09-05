@@ -13,3 +13,6 @@ spring:
         username: root
         password: root12345
 
+logging:
+    level:
+        org.springframework.data.mongodb.core.MongoTemplate: DEBUG

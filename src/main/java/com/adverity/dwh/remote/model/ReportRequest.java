@@ -10,6 +10,9 @@ import java.util.Set;
 public class ReportRequest {
 
     @Schema(name = "collectionName", description = "an optional set of dimension filters to be filtered on")
+    private Map<String, String> calculatedField;
+
+    @Schema(name = "collectionName", description = "an optional set of dimension filters to be filtered on")
     private String collectionName;
 
     @Schema(name = "filter", description = "an optional set of dimension filters to be filtered on")

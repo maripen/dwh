@@ -10,9 +10,7 @@ import org.bson.Document;
 import org.bson.conversions.Bson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.mongodb.core.MongoTemplate;
-import org.springframework.data.mongodb.core.aggregation.Aggregation;
-import org.springframework.data.mongodb.core.aggregation.GroupOperation;
-import org.springframework.data.mongodb.core.aggregation.MatchOperation;
+import org.springframework.data.mongodb.core.aggregation.*;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
 
@@ -31,7 +29,6 @@ import static com.mongodb.client.model.Projections.fields;
 @Slf4j
 public class ReportService {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final MongoTemplate mongoTemplate;
 
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("MM/dd/yy");
@@ -41,17 +38,16 @@ public class ReportService {
         this.mongoTemplate = mongoTemplate;
     }
 
-    public Map query(ReportRequest request) {
-        logQuery(request);
+    public List<Map> query(ReportRequest request) {
+        final var stages = new ArrayList<AggregationOperation>();
+        buildMatchStage(request).ifPresent(stages::add);
+        buildGroupByStage(request).ifPresent(stages::add);
+        getProjectionStage(request).ifPresent(stages::add);
 
-        final Optional<MatchOperation> matchStage = buildMatchStage(request);
-        final Optional<GroupOperation> groupByStage = buildGroupByStage(request);
-        // final Optional<Bson> projectStage = getProjectionStage(request);
-
-        return this.mongoTemplate.aggregate(Aggregation.newAggregation(matchStage.get(), groupByStage.get()),
+        return this.mongoTemplate.aggregate(Aggregation.newAggregation(
+                stages),
                 request.getCollectionName(),
-                Map.class).getUniqueMappedResult();
-        // return repository.aggregate(stages);
+                Map.class).getMappedResults();
     }
 
     private Optional<MatchOperation> buildMatchStage(ReportRequest request) {
@@ -66,7 +62,7 @@ public class ReportService {
                                     try {
                                         Method filterMethod = Criteria.class.getMethod(filterOperator.name(), Object.class);
                                         criteriaList.add((Criteria) filterMethod.invoke(Criteria.where(fieldEntry.getKey()),
-                                                this.getFieldType(value).apply(value)));
+                                                this.getFieldType(value).apply(value).get()));
                                     } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
                                         throw new IllegalArgumentException("Illegal filter operator");
                                     }
@@ -82,7 +78,7 @@ public class ReportService {
         }
     }
 
-    public Function<String, Object> getFieldType(String value) { // TODO: move to util
+    public Function<String, Optional> getFieldType(String value) { // TODO: move to util
         final Optional<Long> number = getNumber(value);
         if (number.isPresent()) {
             return val -> getNumber(val).map(aLong -> aLong);
@@ -118,7 +114,6 @@ public class ReportService {
         } else {
             var groupOperation =
                     Aggregation.group(request.getGroupBy().toArray(new String[request.getGroupBy().size()]));
-            // Method filterMethod = Criteria.class.getMethod(filterOperator.name(), Object.class);
             for (var aggregationEntry : request.getAggregate().entrySet()) {
                 try {
                     Method aggregationMethod =
@@ -133,35 +128,34 @@ public class ReportService {
         }
     }
 
-    private Optional<Bson> getProjectionStage(ReportRequest request) {
-        List<Bson> projectionIncludeGroupId = new ArrayList<>();
+    private Optional<ProjectionOperation> getProjectionStage(ReportRequest request) {
+        List<String> projectionFields = new ArrayList<>();
+
         if (request.getGroupBy() != null) {
-            request.getGroupBy().forEach(groupBy -> {
-                projectionIncludeGroupId.add(computed(groupBy, "$_id." + groupBy));
-            });
+            request.getGroupBy()
+                    .stream()
+                    .map(groupBy -> "$_id." + groupBy)
+                    .collect(Collectors.toCollection(() -> projectionFields));
         }
 
-        final ArrayList<Bson> projectionFields = new ArrayList<>();
         if (request.getAggregate() != null) {
-            request.getAggregate().keySet().forEach(s -> projectionFields.add(include(s)));
+            projectionFields.addAll(request.getAggregate().keySet());
         }
-        if (!projectionIncludeGroupId.isEmpty()) {
-            projectionFields.add(excludeId());
-            projectionFields.addAll(projectionIncludeGroupId);
-            return Optional.of(Aggregates.project(fields(projectionFields)));
-        } else {
+
+        if(projectionFields.isEmpty()) {
             return Optional.empty();
         }
-    }
 
-    private void logQuery(Object request) {
-        if (log.isDebugEnabled()) {
-            try {
-                log.debug("Running query : " + objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(request));
-            } catch (JsonProcessingException e) {
-                log.error("Failed to log query", e);
+        var projectionOperation = Aggregation.project(projectionFields.toArray(String[]::new));
+
+        if(request.getCalculatedField() != null) {
+            for(var calculatedField : request.getCalculatedField().entrySet()) {
+                projectionOperation =
+                        projectionOperation.andExpression(calculatedField.getValue()).as(calculatedField.getKey());
             }
         }
-    }
 
+        return Optional.of(projectionOperation);
+
+    }
 }

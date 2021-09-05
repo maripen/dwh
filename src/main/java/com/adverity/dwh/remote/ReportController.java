@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -29,7 +30,7 @@ public class ReportController {
 
     @Operation(description = "Execute a query using request DSL")
     @RequestMapping(method = RequestMethod.POST)
-    public Map<String, Object> query(
+    public List<Map> query(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Query Json", required = true,
                     content = @Content(examples = @ExampleObject(value = "{ \"filter\": { \"Datasource\": { \"eq\": \"Google Ads\" } }, \"groupBy\": [ \"Campaign\" ], \"aggregate\": { \"Clicks\": \"sum\" } }")))
             @Valid @RequestBody ReportRequest request) {
