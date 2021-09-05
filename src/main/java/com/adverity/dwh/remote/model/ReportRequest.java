@@ -9,10 +9,10 @@ import java.util.Set;
 @Data
 public class ReportRequest {
 
-    @Schema(name = "collectionName", description = "an optional set of dimension filters to be filtered on")
+    @Schema(name = "calculatedField", description = "a calculated field, the base fields must have been be aggregated")
     private Map<String, String> calculatedField;
 
-    @Schema(name = "collectionName", description = "an optional set of dimension filters to be filtered on")
+    @Schema(name = "collectionName", description = "collection name based on the imported csv filename")
     private String collectionName;
 
     @Schema(name = "filter", description = "an optional set of dimension filters to be filtered on")

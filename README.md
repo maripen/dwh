@@ -11,7 +11,7 @@ available in a separate collection by its filename.
 - [Docker](https://www.docker.com/)
 
 ## API Documentation
-The API documentation can be checked at: `localhost:8080/swagger-ui.html`
+The API documentation can be checked at: `http://localhost:8080/swagger-ui.html`
 
 ## Running locally
 Execute:

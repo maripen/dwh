@@ -29,11 +29,26 @@ public class ReportController {
         this.reportService = reportService;
     }
 
-    @Operation(description = "Execute a query using request DSL")
+    @Operation(description = "Execute a report query using request DSL")
     @RequestMapping(method = RequestMethod.POST)
     public List<Map> query(
             @io.swagger.v3.oas.annotations.parameters.RequestBody(description = "Query Json", required = true,
-                    content = @Content(examples = @ExampleObject(value = "{ \"filter\": { \"Datasource\": { \"eq\": \"Google Ads\" } }, \"groupBy\": [ \"Campaign\" ], \"aggregate\": { \"Clicks\": \"sum\" } }")))
+                    content = @Content(examples = @ExampleObject(value = "{\n" +
+                            "    \"filter\": {\n" +
+                            "        \"Datasource\" : { \"is\": \"Twitter Ads\" }\n" +
+                            "    },\n" +
+                            "    \"groupBy\" : [\n" +
+                            "        \"Datasource\", \"Campaign\"\n" +
+                            "    ],\n" +
+                            "    \"calculatedField\" : {\n" +
+                            "        \"CTR\" : \"Clicks / Impressions\"\n" +
+                            "    },\n" +
+                            "    \"aggregate\" : {\n" +
+                            "        \"Impressions\" : \"sum\",\n" +
+                            "        \"Clicks\": \"sum\"\n" +
+                            "    },\n" +
+                            "    \"collectionName\" : \"PIxSyyrIKFORrCXfMYqZBI\"\n" +
+                            "}")))
             @Valid @RequestBody ReportRequest request) {
         return reportService.query(request);
     }
