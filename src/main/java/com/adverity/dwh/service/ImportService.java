@@ -29,12 +29,13 @@ public class ImportService {
         this.csvFileToObjectListConverter = csvFileToObjectListConverter;
     }
 
-    public void importFile(URI fileUri) {
+    public String importFile(URI fileUri) {
         log.debug("Starting import of file {}", fileUri);
         final String filename = fileUri.getPath().replace("/", "").replace(".csv", "");
         var csvFile = restTemplate.getForObject(fileUri, String.class);
         Objects.requireNonNull(csvFile, "Invalid URL or file not available");
         this.adItemsRepository.deleteCollection(filename);
         this.adItemsRepository.saveAll(this.csvFileToObjectListConverter.convert(csvFile), filename);
+        return filename;
     }
 }

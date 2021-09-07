@@ -28,7 +28,7 @@ public class ImportController {
 
     @PostMapping(value="csv", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> importCsv(@Valid @RequestBody ImportRequest request) {
-        this.importService.importFile(request.getUrl());
-        return ResponseEntity.ok().build();
+        var fileName = this.importService.importFile(request.getUrl());
+        return ResponseEntity.ok("The CSV file has been imported as collectionName: " + fileName);
     }
 }
